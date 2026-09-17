@@ -1,0 +1,91 @@
+/*
+ * SPDX-FileCopyrightText: <text>Copyright (c) 2026 Infineon Technologies AG,
+ * or an affiliate of Infineon Technologies AG. All rights reserved.</text>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/* SCB0 is the only SPI-capable SCB on this package, so the hardware UART
+ * console on SCB0 is disabled in favor of SPI slave mode. Slave mode needs
+ * the hardware slave-select line (P2.5), since the generic GPIO CS used by
+ * the master sample does not apply here. This sample has no console;
+ * received commands are shown by toggling the onboard LED (LED0).
+ *
+ * Logic-analyzer / external-master probe points:
+ *   MOSI -> P0.2
+ *   MISO -> P0.3
+ *   SCLK -> P2.4
+ *   CS   -> P2.5 (hardware slave select, active low)
+ */
+
+uart0: &scb0 {
+	status = "disabled";
+};
+
+spi1: &scb0 {
+	compatible = "infineon,spi";
+	status = "okay";
+	/delete-property/ current-speed;
+	pinctrl-0 = <&p0_2_scb0_spi_mosi &p0_3_scb0_spi_miso
+		     &p2_4_scb0_spi_clk &p2_5_scb0_spi_select0>;
+	pinctrl-names = "default";
+	clocks = <&peri_clk_div1>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+};
+
+&p0_2_scb0_spi_mosi {
+	input-enable;
+};
+
+&p0_3_scb0_spi_miso {
+	drive-push-pull;
+};
+
+&p2_4_scb0_spi_clk {
+	input-enable;
+};
+
+&p2_5_scb0_spi_select0 {
+	input-enable;
+	bias-pull-up;
+};
+
+&gpio_prt0 {
+	status = "okay";
+};
+
+&gpio_prt2 {
+	status = "okay";
+};
+
+&peri_clk_div1 {
+	status = "okay";
+	clock-div = <3>;
+};
+
+/* Logic-analyzer debug markers (change pins to match your wiring):
+ *   sig0 (P0.4): HIGH while blocked inside spi_read()
+ *   sig1 (P0.1): HIGH when the last spi_read() returned 0, LOW on error
+ */
+/ {
+	debug_signals {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		sig_read: sig_read {
+			gpios = <&gpio_prt0 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		sig_ret: sig_ret {
+			gpios = <&gpio_prt0 1 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	aliases {
+		sig0 = &sig_read;
+		sig1 = &sig_ret;
+	};
+};
