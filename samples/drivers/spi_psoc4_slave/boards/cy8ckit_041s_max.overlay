@@ -1,0 +1,78 @@
+/*
+ * SPDX-FileCopyrightText: <text>Copyright (c) 2026 Infineon Technologies AG,
+ * or an affiliate of Infineon Technologies AG. All rights reserved.</text>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/* SCB1 is routed to the P2 header pins on this board. Slave mode needs the
+ * hardware slave-select line (P2.3); the generic GPIO CS used by the master
+ * sample does not apply here.
+ *
+ * Logic-analyzer / external-master probe points:
+ *   MOSI -> P2.0
+ *   MISO -> P2.1
+ *   SCLK -> P2.2
+ *   CS   -> P2.3 (hardware slave select, active low)
+ */
+
+&spi1 {
+	compatible = "infineon,spi";
+	status = "okay";
+	pinctrl-0 = <&p2_0_scb1_spi_s_mosi &p2_1_scb1_spi_s_miso
+		     &p2_2_scb1_spi_s_clk &p2_3_scb1_spi_s_select0>;
+	pinctrl-names = "default";
+};
+
+&p2_0_scb1_spi_s_mosi {
+	input-enable;
+};
+
+&p2_1_scb1_spi_s_miso {
+	drive-push-pull;
+};
+
+&p2_2_scb1_spi_s_clk {
+	input-enable;
+};
+
+&p2_3_scb1_spi_s_select0 {
+	input-enable;
+	bias-pull-up;
+};
+
+&gpio_prt2 {
+	status = "okay";
+};
+
+/* The board has only LED0, so use spare P2 pins for activity and debug
+ * markers. Verify these pins against the external wiring before probing.
+ */
+/ {
+	leds {
+		activity_led: activity_led {
+			gpios = <&gpio_prt2 4 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	debug_signals {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		sig_read: sig_read {
+			gpios = <&gpio_prt2 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		sig_ret: sig_ret {
+			gpios = <&gpio_prt2 6 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	aliases {
+		led1 = &activity_led;
+		sig0 = &sig_read;
+		sig1 = &sig_ret;
+	};
+};

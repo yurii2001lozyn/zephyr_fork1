@@ -1,0 +1,54 @@
+/*
+ * SPDX-FileCopyrightText: <text>Copyright (c) 2026 Infineon Technologies AG,
+ * or an affiliate of Infineon Technologies AG. All rights reserved.</text>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* This board is PSOC6/CAT1A: ifx_cat1_spi_transfer_async() takes the
+ * Cy_SCB_SPI_Transfer_Buffer() path (IFX_SPI_ASYMM_PDL_FUNC_AVAIL), not the
+ * PSOC4 manual-chunking path the original bug was found in. This overlay
+ * lets the same sample check whether the slave-role problem also shows up
+ * on that different driver path.
+ *
+ * SCB3 has no pre-generated SPI pinctrl nodes (only I2C/UART), so its pins
+ * are hand-defined below. SCB3 doubles as the board's default I2C bus
+ * (i2c3); this overlay repurposes it for SPI master mode instead.
+ *
+ * Logic-analyzer probe points:
+ *   MOSI -> P6.0
+ *   MISO -> P6.1
+ *   SCLK -> P6.2
+ *   CS   -> P6.3 (SCB hardware slave-select SS0, active low)
+ */
+
+spi1: &scb3 {
+	compatible = "infineon,spi";
+	status = "okay";
+
+	pinctrl-0 = <&p6_0_scb3_spi_m_mosi &p6_1_scb3_spi_m_miso
+		     &p6_2_scb3_spi_m_clk &p6_3_scb3_spi_m_select0>;
+	pinctrl-names = "default";
+};
+
+&pinctrl {
+	p6_0_scb3_spi_m_mosi: p6_0_scb3_spi_m_mosi {
+		pinmux = <DT_CAT1_PINMUX(6, 0, HSIOM_SEL_ACT_8)>;
+		drive-push-pull;
+	};
+
+	p6_1_scb3_spi_m_miso: p6_1_scb3_spi_m_miso {
+		pinmux = <DT_CAT1_PINMUX(6, 1, HSIOM_SEL_ACT_8)>;
+		input-enable;
+	};
+
+	p6_2_scb3_spi_m_clk: p6_2_scb3_spi_m_clk {
+		pinmux = <DT_CAT1_PINMUX(6, 2, HSIOM_SEL_ACT_8)>;
+		drive-push-pull;
+	};
+
+	p6_3_scb3_spi_m_select0: p6_3_scb3_spi_m_select0 {
+		pinmux = <DT_CAT1_PINMUX(6, 3, HSIOM_SEL_ACT_8)>;
+		drive-push-pull;
+	};
+};
